@@ -162,3 +162,76 @@
 
 </div>
 
+<script>
+  const STATE = {
+    day: 1,
+    phase: 'title',
+    harvestYield: 1,
+    baseEnergy: 10,
+    energyMax: 10,
+    energyRemaining: 10,
+    actionCosts: { plant: 3, water: 2, harvest: 1 },
+    plots: ['empty', 'empty', 'empty'],
+    inventory: [],
+    forest: [],
+    maxForest: 10,
+    winCount: 10,
+  }
+
+  // Canvas setup
+  const TILE = 32;
+
+  const FARM_LAYOUT = {
+    plots: [
+      { x: 4, y: 2 },
+      { x: 8, y: 2 },
+      { x: 12, y: 2 },
+    ]
+  };
+
+  const player = {
+    x: 3,
+    y: 5,
+    color: '#e8d5b0'
+  };
+
+  function drawFarm() {
+    const canvas = document.getElementById('farm-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Wipe canvas before redrawing
+    ctx.fillStyle = '#1a1a0e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw each plot based on its current state
+    FARM_LAYOUT.plots.forEach((plot, i) => {
+      const state = STATE.plots[i];
+
+      if (state === 'empty')     ctx.fillStyle = '#3b2a1a';
+      if (state === 'planted')   ctx.fillStyle = '#2d5a27';
+      if (state === 'watered')   ctx.fillStyle = '#1a3a5c';
+      if (state === 'harvested') ctx.fillStyle = '#5a3a1a';
+
+      ctx.fillRect(plot.x * TILE, plot.y * TILE, TILE * 2, TILE * 2);
+
+      ctx.fillStyle = '#e8d5b0';
+      ctx.font = '6px monospace';
+      ctx.fillText(state.toUpperCase(), plot.x * TILE + 4, plot.y * TILE + TILE + 4);
+    });
+
+    // Draw player
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x * TILE + 4, player.y * TILE + 4, TILE - 8, TILE - 8);
+  }
+
+  function updateInventory() {
+    const count = STATE.inventory.length;
+    const display = document.getElementById('inventory-display');
+    if (count === 0) {
+      display.textContent = 'empty';
+    } else {
+      display.textContent = count + ' crop(s)';
+    }
+  }
+
+  // Keyboard controls
