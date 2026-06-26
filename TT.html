@@ -278,3 +278,65 @@
 
     drawFarm();
   });
+
+  function applyTreeEffects() {
+    STATE.energyMax = STATE.baseEnergy;
+    STATE.actionCosts = { plant: 3, water: 2, harvest: 1 };
+
+    const peachCount = STATE.forest.filter(t => t === 'peach').length;
+    STATE.energyMax += peachCount * 3;
+
+    const cherryCount = STATE.forest.filter(t => t === 'cherry').length;
+    for (let action in STATE.actionCosts) {
+      STATE.actionCosts[action] = Math.max(1, STATE.actionCosts[action] - cherryCount);
+    }
+
+    const appleCount = STATE.forest.filter(t => t === 'apple').length;
+    STATE.harvestYield = appleCount > 0 ? 2 : 1;
+
+    const bananaCount = STATE.forest.filter(t => t === 'banana').length;
+    if (bananaCount > 0) {
+      STATE.plots = STATE.plots.map(p => p === 'planted' ? 'watered' : p);
+    }
+
+    STATE.energyRemaining = STATE.energyMax;
+  }
+
+  function render() {
+    // Hide all screens first
+    document.getElementById('screen-title').style.display = 'none';
+    document.getElementById('screen-farming').style.display = 'none';
+    document.getElementById('screen-offering').style.display = 'none';
+
+    // Show the right screen
+    if (STATE.phase === 'title') {
+      document.getElementById('screen-title').style.display = 'block';
+    }
+    if (STATE.phase === 'farming') {
+      document.getElementById('screen-farming').style.display = 'block';
+    }
+    if (STATE.phase === 'offering') {
+      document.getElementById('screen-offering').style.display = 'block';
+      document.getElementById('offer-inventory').textContent = STATE.inventory.length;
+    }
+
+    document.getElementById('hud-day').textContent = STATE.day + ' / 4';
+    document.getElementById('hud-energy').textContent = STATE.energyRemaining + ' / ' + STATE.energyMax;
+
+    if (STATE.phase === 'farming') drawFarm();
+  }
+
+  function startGame() {
+    applyTreeEffects();
+    STATE.phase = 'farming';
+    render();
+  }
+
+  function endDay() {
+    STATE.phase = 'offering';
+    render();
+  }
+</script>
+
+</body>
+</html>
