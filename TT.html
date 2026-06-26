@@ -235,3 +235,46 @@
   }
 
   // Keyboard controls
+    document.addEventListener('keydown', function(e) {
+
+    if (STATE.phase !== 'farming') return;
+
+    if (e.key === 'ArrowUp'    || e.key === 'w') player.y -= 1;
+    if (e.key === 'ArrowDown'  || e.key === 's') player.y += 1;
+    if (e.key === 'ArrowLeft'  || e.key === 'a') player.x -= 1;
+    if (e.key === 'ArrowRight' || e.key === 'd') player.x += 1;
+
+    const canvas = document.getElementById('farm-canvas');
+    const maxX = (canvas.width / TILE) - 1;
+    const maxY = (canvas.height / TILE) - 1;
+
+    player.x = Math.max(0, Math.min(maxX, player.x));
+    player.y = Math.max(0, Math.min(maxY, player.y));
+
+    if (e.key === 'e' || e.key === 'E') {
+      FARM_LAYOUT.plots.forEach((plot, i) => {
+        if (player.x >= plot.x && player.x <= plot.x + 1 &&
+            player.y >= plot.y && player.y <= plot.y + 1) {
+
+          if (STATE.plots[i] === 'empty' && STATE.energyRemaining >= STATE.actionCosts.plant) {
+            STATE.plots[i] = 'planted';
+            STATE.energyRemaining -= STATE.actionCosts.plant;
+          }
+          else if (STATE.plots[i] === 'planted' && STATE.energyRemaining >= STATE.actionCosts.water) {
+            STATE.plots[i] = 'watered';
+            STATE.energyRemaining -= STATE.actionCosts.water;
+          }
+          else if (STATE.plots[i] === 'watered' && STATE.energyRemaining >= STATE.actionCosts.harvest) {
+            STATE.plots[i] = 'harvested';
+            STATE.energyRemaining -= STATE.actionCosts.harvest;
+            STATE.inventory.push('crop');
+          }
+        }
+      });
+
+      render();
+      updateInventory();
+    }
+
+    drawFarm();
+  });
