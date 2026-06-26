@@ -159,7 +159,19 @@
 
     <button class="btn" onclick="nextDay()">NEXT DAY →</button>
   </div>
+  <!-- WIN SCREEN -->
+  <div id="screen-win" style="display:none">
+    <p style="font-size:8px; color:#7db87a; margin-bottom:16px">🌳 THE FOREST LIVES!</p>
+    <p style="font-size:7px; margin-bottom:24px">You restored the forest. The Goddess is pleased.</p>
+    <button class="btn" onclick="location.reload()">PLAY AGAIN</button>
+  </div>
 
+  <!-- LOSE SCREEN -->
+  <div id="screen-lose" style="display:none">
+    <p style="font-size:8px; color:#c4622d; margin-bottom:16px">🔥 THE FOREST IS LOST</p>
+    <p style="font-size:7px; margin-bottom:24px">You ran out of time. The ash remains.</p>
+    <button class="btn" onclick="location.reload()">TRY AGAIN</button>
+  </div>
 </div>
 
 <script>
@@ -267,7 +279,9 @@
           else if (STATE.plots[i] === 'watered' && STATE.energyRemaining >= STATE.actionCosts.harvest) {
             STATE.plots[i] = 'harvested';
             STATE.energyRemaining -= STATE.actionCosts.harvest;
-            STATE.inventory.push('crop');
+            for (let i = 0; i < STATE.harvestYield; i++) {
+              STATE.inventory.push('crop');
+            }
           }
         }
       });
@@ -283,20 +297,20 @@
     STATE.energyMax = STATE.baseEnergy;
     STATE.actionCosts = { plant: 3, water: 2, harvest: 1 };
 
-    const peachCount = STATE.forest.filter(t => t === 'peach').length;
+    const peachCount = STATE.forest.filter(t => t === 'peach').length; // more energy
     STATE.energyMax += peachCount * 3;
 
-    const cherryCount = STATE.forest.filter(t => t === 'cherry').length;
+    const cherryCount = STATE.forest.filter(t => t === 'cherry').length; //reduces energy cost by 1
     for (let action in STATE.actionCosts) {
-      STATE.actionCosts[action] = Math.max(1, STATE.actionCosts[action] - cherryCount);
+      STATE.actionCosts[action] = Math.max(1, STATE.actionCosts[action] - cherryCount); 
     }
 
     const appleCount = STATE.forest.filter(t => t === 'apple').length;
-    STATE.harvestYield = appleCount > 0 ? 2 : 1;
+    STATE.harvestYield = appleCount > 0 ? 2 : 1; // two crops instead of one
 
     const bananaCount = STATE.forest.filter(t => t === 'banana').length;
     if (bananaCount > 0) {
-      STATE.plots = STATE.plots.map(p => p === 'planted' ? 'watered' : p);
+      STATE.plots = STATE.plots.map(p => p === 'planted' ? 'watered' : p); // plantes that are planted are watered the next day
     }
 
     STATE.energyRemaining = STATE.energyMax;
@@ -307,6 +321,15 @@
     document.getElementById('screen-title').style.display = 'none';
     document.getElementById('screen-farming').style.display = 'none';
     document.getElementById('screen-offering').style.display = 'none';
+    document.getElementById('screen-win').style.display = 'none';
+    document.getElementById('screen-lose').style.display = 'none';
+
+    if (STATE.phase === 'Win') {
+      document.getElementById('screen-win').style.display = 'block';
+    }
+    if (STATE.phase === 'Lose') {
+      document.getElementById('screen-lose').style.display = 'block';
+    }
 
     // Show the right screen
     if (STATE.phase === 'title') {
@@ -364,13 +387,20 @@
 
 function nextDay() {
   STATE.day += 1;
-
-  // Reset harvested plots BEFORE applying tree effects
   STATE.plots = STATE.plots.map(p => p === 'harvested' ? 'empty' : p);
-
-  // Now apply tree effects with the correct plot states
   applyTreeEffects();
-
+  // Check for win
+  if (STATE.forest.length >= STATE.winCount) {
+    STATE.phase = 'Win';
+    render();
+    return; // stop here, don't go back to farming
+  }
+  // Check for lose
+  if (STATE.day> 4) {
+    STATE.phase = 'Lose';
+    render();
+    return;
+  }
   STATE.phase = 'farming';
   render();
 }
