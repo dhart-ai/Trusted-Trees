@@ -4,14 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trusted Trees</title>
+  <!-- Google Fonts: Press Start 2P gives us the pixel art font style -->
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
+    /* Reset all default browser margins and padding so we start clean */
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
 
+    /* Dark forest green background, centered layout for the game card */
     body {
       background-color: #173825;
       display: flex;
@@ -21,6 +24,7 @@
       font-family: 'Press Start 2P', monospace;
     }
 
+    /* The main game container — everything lives inside this brown card */
     #game-card {
       background-color: #2a1f1a;
       border: 4px solid #c4622d;
@@ -30,6 +34,7 @@
       color: #e8d5b0;
     }
 
+    /* HUD bar at the top — uses flexbox to space items evenly across the bar */
     #hud {
       display: flex;
       justify-content: space-between;
@@ -39,28 +44,33 @@
       margin-bottom: 20px;
     }
 
+    /* Small green label above each HUD value (DAY, ENERGY, FOREST) */
     #hud .hud-label {
       font-size: 8px;
       color: #7db87a;
       margin-bottom: 4px;
     }
 
+    /* The actual number displayed in the HUD */
     #hud .hud-value {
       font-size: 12px;
       color: #e8d5b0;
     }
 
+    /* Title screen container — centered text layout */
     #screen-title {
       text-align: center;
       padding: 40px 20px;
     }
 
+    /* Large green title text */
     #screen-title h1 {
       font-size: 20px;
       color: #7db87a;
       margin-bottom: 12px;
     }
 
+    /* Small description text under the title */
     #screen-title p {
       font-size: 7px;
       color: #e8d5b0;
@@ -68,6 +78,7 @@
       margin-bottom: 32px;
     }
 
+    /* Reusable button style used across all screens */
     .btn {
       font-family: 'Press Start 2P', monospace;
       font-size: 10px;
@@ -78,11 +89,13 @@
       cursor: pointer;
     }
 
+    /* Button hover effect — inverts colors so it feels responsive */
     .btn:hover {
       background-color: #e8d5b0;
       color: #1a1a2e;
     }
 
+    /* Plot tile style — used in the old point-and-click version, kept for reference */
     .plot {
       width: 120px;
       height: 120px;
@@ -101,23 +114,30 @@
 
 <div id="game-card">
 
-  <!-- HUD: always visible -->
+  <!-- HUD: always visible at the top regardless of which screen is active -->
   <div id="hud">
     <div>
       <div class="hud-label">DAY</div>
+      <!-- Updated by render() every time the day changes -->
       <div class="hud-value" id="hud-day">1 / 4</div>
     </div>
     <div style="text-align:center">
       <div class="hud-label">TRUSTED TREES</div>
       <div class="hud-value" style="color:#c4622d">🌳</div>
     </div>
+    <div>
+      <div class="hud-label">FOREST</div>
+      <!-- Shows how many trees are in the forest vs the win target -->
+      <div class="hud-value" id="hud-forest">0 / 10</div>
+    </div>
     <div style="text-align:right">
       <div class="hud-label">ENERGY</div>
-      <div class="hud-value" id="hud-energy">10 / 10</div>
+      <!-- Shows remaining energy vs max energy for the day -->
+      <div class="hud-value" id="hud-energy">12 / 12</div>
     </div>
   </div>
 
-  <!-- TITLE SCREEN -->
+  <!-- TITLE SCREEN: shown when STATE.phase === 'title' -->
   <div id="screen-title">
     <h1>TRUSTED TREES</h1>
     <p>
@@ -125,117 +145,164 @@
       Farm produce. Offer it to the Goddess.<br>
       Grow 10 trees in 4 days to win.
     </p>
+    <!-- Calls startGame() which sets up day 1 and switches to farming phase -->
     <button class="btn" onclick="startGame()">BEGIN</button>
   </div>
 
-  <!-- FARMING SCREEN -->
+  <!-- FARMING SCREEN: shown when STATE.phase === 'farming' -->
   <div id="screen-farming" style="display:none">
     <p style="font-size:8px; color:#7db87a; margin-bottom:12px">🌱 FARMING PHASE</p>
+    <!-- The canvas is where the top-down farm world is drawn every frame -->
     <canvas id="farm-canvas" width="672" height="320" style="border: 3px solid #4a4a5a; display:block"></canvas>
     <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center">
+      <!-- Hint text reminds the player how to move and interact -->
       <div id="action-hint" style="font-size:7px; color:#7db87a">Move with WASD or arrow keys | Press E to interact</div>
+      <!-- Ends the farming phase and moves to the offering phase -->
       <button class="btn" onclick="endDay()">END DAY →</button>
     </div>
+    <!-- Shows how many crops the player has collected this day -->
     <div style="margin-top:12px; font-size:7px; color:#e8d5b0">
       INVENTORY: <span id="inventory-display">empty</span>
     </div>
   </div>
 
-  <!-- OFFERING SCREEN -->
+  <!-- OFFERING SCREEN: shown when STATE.phase === 'offering' -->
   <div id="screen-offering" style="display:none">
     <p style="font-size:8px; color:#7db87a; margin-bottom:16px">🌿 OFFERING PHASE</p>
     <p style="font-size:7px; margin-bottom:16px">Choose what to offer the Forest Goddess.</p>
 
+    <!-- Shows how many crops are available to spend on trees -->
     <div style="margin-bottom:16px; font-size:7px">
       CROPS AVAILABLE: <span id="offer-inventory">0</span>
     </div>
 
-    <div style="display:flex; gap:12px; margin-bottom:24px">
+    <!-- Each button calls makeOffer() with a different tree type string -->
+    <!-- The cost of each tree is shown in the button label -->
+    <div style="display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap">
+      <button class="btn" onclick="makeOffer('normal')">🌲 NORMAL TREE (1 crop)</button>
       <button class="btn" onclick="makeOffer('cherry')">🍒 CHERRY TREE (2 crops)</button>
       <button class="btn" onclick="makeOffer('peach')">🍑 PEACH TREE (3 crops)</button>
       <button class="btn" onclick="makeOffer('apple')">🍎 APPLE TREE (4 crops)</button>
       <button class="btn" onclick="makeOffer('banana')">🍌 BANANA TREE (5 crops)</button>
     </div>
 
+    <!-- Advances to the next day, checks win/lose, applies tree effects -->
     <button class="btn" onclick="nextDay()">NEXT DAY →</button>
   </div>
-  <!-- WIN SCREEN -->
+
+  <!-- WIN SCREEN: shown when STATE.forest.length reaches winCount -->
   <div id="screen-win" style="display:none">
     <p style="font-size:8px; color:#7db87a; margin-bottom:16px">🌳 THE FOREST LIVES!</p>
     <p style="font-size:7px; margin-bottom:24px">You restored the forest. The Goddess is pleased.</p>
+    <!-- Reloads the page to restart the game from scratch -->
     <button class="btn" onclick="location.reload()">PLAY AGAIN</button>
   </div>
 
-  <!-- LOSE SCREEN -->
+  <!-- LOSE SCREEN: shown when STATE.day goes past 4 without winning -->
   <div id="screen-lose" style="display:none">
     <p style="font-size:8px; color:#c4622d; margin-bottom:16px">🔥 THE FOREST IS LOST</p>
     <p style="font-size:7px; margin-bottom:24px">You ran out of time. The ash remains.</p>
     <button class="btn" onclick="location.reload()">TRY AGAIN</button>
   </div>
+
 </div>
 
 <script>
+  /*
+    STATE is the single source of truth for the entire game.
+    Every system reads from and writes to this object.
+    Nothing should change without going through STATE first.
+  */
   const STATE = {
-    day: 1,
-    phase: 'title',
-    harvestYield: 1,
-    baseEnergy: 12,
-    energyMax: 12,
-    energyRemaining: 10,
-    actionCosts: { plant: 3, water: 2, harvest: 1 },
-    plots: ['empty', 'empty', 'empty'],
-    inventory: [],
-    forest: [],
-    maxForest: 10,
-    winCount: 10,
+    day: 1,                    // current day (1-4)
+    phase: 'title',            // controls which screen is visible
+    harvestYield: 1,           // how many crops one harvest action produces (apple trees change this)
+    baseEnergy: 12,            // energy pool before tree bonuses are applied
+    energyMax: 12,             // actual max energy after tree bonuses (peach trees raise this)
+    energyRemaining: 12,       // energy left to spend this day
+    actionCosts: {             // energy cost of each farming action (cherry trees lower these)
+      plant: 3,
+      water: 2,
+      harvest: 1
+    },
+    plots: ['empty', 'empty', 'empty'], // state of each farm plot: 'empty'|'planted'|'watered'|'harvested'
+    inventory: [],             // array of crops collected this day, ready to offer
+    forest: [],                // array of tree types grown so far: 'normal'|'cherry'|'peach'|'apple'|'banana'
+    maxForest: 10,             // max trees the forest can hold
+    winCount: 10,              // number of trees needed to win
   }
 
-  // Canvas setup
+  /*
+    TILE is our grid unit — every position on the canvas is measured in tiles.
+    Multiplying a tile coordinate by TILE gives us the pixel position to draw at.
+  */
   const TILE = 32;
 
+  /*
+    FARM_LAYOUT defines where the 3 plots sit on the grid.
+    x and y are tile coordinates, not pixels.
+    Each plot is 2x2 tiles in size.
+  */
   const FARM_LAYOUT = {
     plots: [
-      { x: 4, y: 2 },
-      { x: 8, y: 2 },
-      { x: 12, y: 2 },
+      { x: 4, y: 2 },   // left plot
+      { x: 8, y: 2 },   // middle plot
+      { x: 12, y: 2 },  // right plot
     ]
   };
 
+  /*
+    player tracks the character's current position on the grid.
+    x and y are tile coordinates — converted to pixels when drawing.
+  */
   const player = {
     x: 3,
     y: 5,
     color: '#e8d5b0'
   };
 
+  /*
+    drawFarm() redraws the entire canvas every time something changes.
+    It always wipes the canvas first, then redraws everything from STATE.
+    This prevents old frames from stacking on top of each other.
+  */
   function drawFarm() {
     const canvas = document.getElementById('farm-canvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d'); // ctx is our drawing tool
 
-    // Wipe canvas before redrawing
+    // Clear the entire canvas with the background color
     ctx.fillStyle = '#1a1a0e';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw each plot based on its current state
+    // Loop through each plot and draw it based on its current state in STATE.plots
     FARM_LAYOUT.plots.forEach((plot, i) => {
       const state = STATE.plots[i];
 
-      if (state === 'empty')     ctx.fillStyle = '#3b2a1a';
-      if (state === 'planted')   ctx.fillStyle = '#2d5a27';
-      if (state === 'watered')   ctx.fillStyle = '#1a3a5c';
-      if (state === 'harvested') ctx.fillStyle = '#5a3a1a';
+      // Each plot state gets a distinct color so the player can read the farm at a glance
+      if (state === 'empty')     ctx.fillStyle = '#3b2a1a'; // dark brown — nothing here
+      if (state === 'planted')   ctx.fillStyle = '#2d5a27'; // green — seed in the ground
+      if (state === 'watered')   ctx.fillStyle = '#1a3a5c'; // blue — ready to harvest
+      if (state === 'harvested') ctx.fillStyle = '#5a3a1a'; // amber — already picked
 
+      // Draw the plot square — multiply tile coords by TILE to get pixel position
+      // TILE * 2 makes the plot 2 tiles wide and 2 tiles tall
       ctx.fillRect(plot.x * TILE, plot.y * TILE, TILE * 2, TILE * 2);
 
+      // Draw the state label in the center of the plot
       ctx.fillStyle = '#e8d5b0';
       ctx.font = '6px monospace';
       ctx.fillText(state.toUpperCase(), plot.x * TILE + 4, plot.y * TILE + TILE + 4);
     });
 
-    // Draw player
+    // Draw the player as a small square — inset by 4px so it looks centered in the tile
     ctx.fillStyle = player.color;
     ctx.fillRect(player.x * TILE + 4, player.y * TILE + 4, TILE - 8, TILE - 8);
   }
 
+  /*
+    updateInventory() updates the inventory text below the canvas.
+    Called after every E key interaction that results in a harvest.
+  */
   function updateInventory() {
     const count = STATE.inventory.length;
     const display = document.getElementById('inventory-display');
@@ -246,28 +313,45 @@
     }
   }
 
-  // Keyboard controls
-    document.addEventListener('keydown', function(e) {
+  /*
+    The keydown event listener handles all keyboard input.
+    It only runs during the farming phase — all other phases block it with an early return.
+    Order of operations each keypress:
+      1. Move the player
+      2. Clamp position to canvas bounds
+      3. Check for E key interaction
+      4. Redraw the farm
+  */
+  document.addEventListener('keydown', function(e) {
 
+    // Block all input if we're not in the farming phase
     if (STATE.phase !== 'farming') return;
 
+    // Move player one tile in the pressed direction
     if (e.key === 'ArrowUp'    || e.key === 'w') player.y -= 1;
     if (e.key === 'ArrowDown'  || e.key === 's') player.y += 1;
     if (e.key === 'ArrowLeft'  || e.key === 'a') player.x -= 1;
     if (e.key === 'ArrowRight' || e.key === 'd') player.x += 1;
 
+    // Calculate the max tile position from the canvas size
     const canvas = document.getElementById('farm-canvas');
     const maxX = (canvas.width / TILE) - 1;
     const maxY = (canvas.height / TILE) - 1;
 
+    // Clamp: Math.max(0) stops negative positions (left/top wall)
+    //        Math.min(max) stops positions beyond the canvas (right/bottom wall)
     player.x = Math.max(0, Math.min(maxX, player.x));
     player.y = Math.max(0, Math.min(maxY, player.y));
 
+    // E key: check if player is standing on a plot and perform the right action
     if (e.key === 'e' || e.key === 'E') {
       FARM_LAYOUT.plots.forEach((plot, i) => {
+
+        // A plot is 2x2 tiles so the player can stand anywhere in that area
         if (player.x >= plot.x && player.x <= plot.x + 1 &&
             player.y >= plot.y && player.y <= plot.y + 1) {
 
+          // Each action checks: is the plot in the right state AND do we have enough energy?
           if (STATE.plots[i] === 'empty' && STATE.energyRemaining >= STATE.actionCosts.plant) {
             STATE.plots[i] = 'planted';
             STATE.energyRemaining -= STATE.actionCosts.plant;
@@ -279,6 +363,7 @@
           else if (STATE.plots[i] === 'watered' && STATE.energyRemaining >= STATE.actionCosts.harvest) {
             STATE.plots[i] = 'harvested';
             STATE.energyRemaining -= STATE.actionCosts.harvest;
+            // Add one crop per harvestYield — apple trees set this to 2
             for (let i = 0; i < STATE.harvestYield; i++) {
               STATE.inventory.push('crop');
             }
@@ -286,52 +371,63 @@
         }
       });
 
+      // Update HUD energy and redraw after any interaction
       render();
       updateInventory();
     }
 
+    // Always redraw after any keypress so the player moves visually
     drawFarm();
   });
 
+  /*
+    applyTreeEffects() recalculates all farm stats based on the current forest.
+    Called at the start of every new day so tree bonuses are always up to date.
+    Order matters — reset to base values first, then apply each tree type on top.
+  */
   function applyTreeEffects() {
+    // Reset to base values before recalculating
     STATE.energyMax = STATE.baseEnergy;
     STATE.actionCosts = { plant: 3, water: 2, harvest: 1 };
 
-    const peachCount = STATE.forest.filter(t => t === 'peach').length; // more energy
+    // Peach trees: each one adds 3 to the daily energy pool
+    const peachCount = STATE.forest.filter(t => t === 'peach').length;
     STATE.energyMax += peachCount * 3;
 
-    const cherryCount = STATE.forest.filter(t => t === 'cherry').length; //reduces energy cost by 1
+    // Cherry trees: each one reduces all action costs by 1, minimum cost of 1
+    const cherryCount = STATE.forest.filter(t => t === 'cherry').length;
     for (let action in STATE.actionCosts) {
-      STATE.actionCosts[action] = Math.max(1, STATE.actionCosts[action] - cherryCount); 
+      STATE.actionCosts[action] = Math.max(1, STATE.actionCosts[action] - cherryCount);
     }
 
+    // Apple trees: if any exist, harvesting gives 2 crops instead of 1
     const appleCount = STATE.forest.filter(t => t === 'apple').length;
-    STATE.harvestYield = appleCount > 0 ? 2 : 1; // two crops instead of one
+    STATE.harvestYield = appleCount > 0 ? 2 : 1;
 
+    // Banana trees: any plots already planted get auto-watered at the start of the day
     const bananaCount = STATE.forest.filter(t => t === 'banana').length;
     if (bananaCount > 0) {
-      STATE.plots = STATE.plots.map(p => p === 'planted' ? 'watered' : p); // plantes that are planted are watered the next day
+      STATE.plots = STATE.plots.map(p => p === 'planted' ? 'watered' : p);
     }
 
+    // Set remaining energy to the new max (resets the energy bar for the day)
     STATE.energyRemaining = STATE.energyMax;
   }
 
+  /*
+    render() is the traffic director — it hides all screens then shows exactly one.
+    It also updates all HUD values to match the current STATE.
+    Always call render() after changing STATE.phase.
+  */
   function render() {
-    // Hide all screens first
+    // Hide every screen first so we start from a clean slate
     document.getElementById('screen-title').style.display = 'none';
     document.getElementById('screen-farming').style.display = 'none';
     document.getElementById('screen-offering').style.display = 'none';
     document.getElementById('screen-win').style.display = 'none';
     document.getElementById('screen-lose').style.display = 'none';
 
-    if (STATE.phase === 'Win') {
-      document.getElementById('screen-win').style.display = 'block';
-    }
-    if (STATE.phase === 'Lose') {
-      document.getElementById('screen-lose').style.display = 'block';
-    }
-
-    // Show the right screen
+    // Show only the screen that matches the current phase
     if (STATE.phase === 'title') {
       document.getElementById('screen-title').style.display = 'block';
     }
@@ -340,70 +436,114 @@
     }
     if (STATE.phase === 'offering') {
       document.getElementById('screen-offering').style.display = 'block';
+      // Update the crop count on the offering screen when it appears
       document.getElementById('offer-inventory').textContent = STATE.inventory.length;
     }
+    if (STATE.phase === 'Win') {
+      document.getElementById('screen-win').style.display = 'block';
+    }
+    if (STATE.phase === 'Lose') {
+      document.getElementById('screen-lose').style.display = 'block';
+    }
 
+    // Always update HUD values to reflect current STATE
     document.getElementById('hud-day').textContent = STATE.day + ' / 4';
     document.getElementById('hud-energy').textContent = STATE.energyRemaining + ' / ' + STATE.energyMax;
+    document.getElementById('hud-forest').textContent = STATE.forest.length + ' / ' + STATE.winCount;
 
+    // Only draw the farm canvas when we're in the farming phase
     if (STATE.phase === 'farming') drawFarm();
   }
 
+  /*
+    startGame() is called when the player clicks BEGIN on the title screen.
+    It applies day 1 tree effects (forest is empty so nothing changes yet)
+    then switches to the farming phase.
+  */
   function startGame() {
     applyTreeEffects();
     STATE.phase = 'farming';
     render();
   }
 
+  /*
+    endDay() is called when the player clicks END DAY.
+    It simply switches to the offering phase — the player keeps their inventory.
+  */
   function endDay() {
     STATE.phase = 'offering';
     render();
   }
 
+  /*
+    makeOffer() is called when the player clicks a tree button on the offering screen.
+    It checks if the player can afford the tree, deducts the crops, and adds the tree to the forest.
+    treeType is the string passed in from the button: 'normal', 'cherry', 'peach', 'apple', 'banana'
+  */
   function makeOffer(treeType) {
-  // Define the cost of each tree type
-  const costs = {
-    cherry: 2,
-    peach: 3,
-    apple: 4,
-    banana: 5
-  };
+    // Cost table — how many crops each tree type requires
+    const costs = {
+      normal: 1,   // no special effect, just counts toward the win
+      cherry: 2,   // reduces action costs
+      peach: 3,    // adds energy
+      apple: 4,    // doubles harvest yield
+      banana: 5    // auto-waters planted plots at dawn
+    };
 
-  const cost = costs[treeType]; // get the cost for the chosen tree
+    const cost = costs[treeType]; // look up the cost for the chosen tree
 
-  // Check if the player has enough crops
-  if (STATE.inventory.length >= cost) {
+    // Only proceed if the player has enough crops
+    if (STATE.inventory.length >= cost) {
+      // splice(0, cost) removes 'cost' number of items from the start of the array
+      STATE.inventory.splice(0, cost);
 
-    // Remove the crops from inventory
-    STATE.inventory.splice(0, cost);
+      // Add the tree type string to the forest array
+      STATE.forest.push(treeType);
 
-    // Add the tree to the forest
-    STATE.forest.push(treeType);
-
-    // Update the crop count display
-    document.getElementById('offer-inventory').textContent = STATE.inventory.length;
+      // Update both the offering screen crop count and the HUD forest count
+      document.getElementById('offer-inventory').textContent = STATE.inventory.length;
+      document.getElementById('hud-forest').textContent = STATE.forest.length + ' / ' + STATE.winCount;
+    }
   }
-}
 
-function nextDay() {
-  STATE.day += 1;
-  STATE.plots = STATE.plots.map(p => p === 'harvested' ? 'empty' : p);
-  applyTreeEffects();
-  // Check for win
-  if (STATE.forest.length >= STATE.winCount) {
-    STATE.phase = 'Win';
+  /*
+    nextDay() advances the game to the next day.
+    Order of operations:
+      1. Increment the day counter
+      2. Reset harvested plots to empty (planted and watered carry over)
+      3. Apply tree effects for the new day
+      4. Check win condition
+      5. Check lose condition
+      6. If neither, go back to farming
+  */
+  function nextDay() {
+    STATE.day += 1;
+
+    // Harvested plots reset to empty — the crop is gone but the soil remains
+    // Planted and watered plots carry over so progress isn't lost
+    STATE.plots = STATE.plots.map(p => p === 'harvested' ? 'empty' : p);
+
+    // Recalculate energy and action costs based on the current forest
+    applyTreeEffects();
+
+    // Win: player has grown enough trees
+    if (STATE.forest.length >= STATE.winCount) {
+      STATE.phase = 'Win';
+      render();
+      return; // stop here — don't fall through to farming
+    }
+
+    // Lose: ran out of days without winning
+    if (STATE.day > 4) {
+      STATE.phase = 'Lose';
+      render();
+      return; // stop here — don't fall through to farming
+    }
+
+    // Neither win nor lose — continue to the next farming day
+    STATE.phase = 'farming';
     render();
-    return; // stop here, don't go back to farming
   }
-  // Check for lose
-  if (STATE.day> 4) {
-    STATE.phase = 'Lose';
-    render();
-    return;
-  }
-  STATE.phase = 'farming';
-  render();
-}
 </script>
 
 </body>
