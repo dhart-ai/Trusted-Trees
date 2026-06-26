@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trusted Trees</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #173825;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Press Start 2P', monospace;
+    }
+
+    #game-card {
+      background-color: #2a1f1a;
+      border: 4px solid #c4622d;
+      width: 720px;
+      min-height: 500px;
+      padding: 24px;
+      color: #e8d5b0;
+    }
+
+    #hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 3px solid #c4622d;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    #hud .hud-label {
+      font-size: 8px;
+      color: #7db87a;
+      margin-bottom: 4px;
+    }
+
+    #hud .hud-value {
+      font-size: 12px;
+      color: #e8d5b0;
+    }
+
+    #screen-title {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    #screen-title h1 {
+      font-size: 20px;
+      color: #7db87a;
+      margin-bottom: 12px;
+    }
+
+    #screen-title p {
+      font-size: 7px;
+      color: #e8d5b0;
+      line-height: 2;
+      margin-bottom: 32px;
+    }
+
+    .btn {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      background-color: #c4622d;
+      color: #e8d5b0;
+      border: none;
+      padding: 12px 24px;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background-color: #e8d5b0;
+      color: #1a1a2e;
+    }
+
+    .plot {
+      width: 120px;
+      height: 120px;
+      border: 3px solid #4a4a5a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7px;
+      cursor: pointer;
+      background-color: #1a1a0e;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-card">
+
+  <!-- HUD: always visible -->
+  <div id="hud">
+    <div>
+      <div class="hud-label">DAY</div>
+      <div class="hud-value" id="hud-day">1 / 4</div>
+    </div>
+    <div style="text-align:center">
+      <div class="hud-label">TRUSTED TREES</div>
+      <div class="hud-value" style="color:#c4622d">🌳</div>
+    </div>
+    <div style="text-align:right">
+      <div class="hud-label">ENERGY</div>
+      <div class="hud-value" id="hud-energy">10 / 10</div>
+    </div>
+  </div>
+
+  <!-- TITLE SCREEN -->
+  <div id="screen-title">
+    <h1>TRUSTED TREES</h1>
+    <p>
+      You are a Tree Deity awakening in a burned forest.<br>
+      Farm produce. Offer it to the Goddess.<br>
+      Grow 10 trees in 4 days to win.
+    </p>
+    <button class="btn" onclick="startGame()">BEGIN</button>
+  </div>
+
+  <!-- FARMING SCREEN -->
+  <div id="screen-farming" style="display:none">
+    <p style="font-size:8px; color:#7db87a; margin-bottom:12px">🌱 FARMING PHASE</p>
+    <canvas id="farm-canvas" width="672" height="320" style="border: 3px solid #4a4a5a; display:block"></canvas>
+    <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center">
+      <div id="action-hint" style="font-size:7px; color:#7db87a">Move with WASD or arrow keys | Press E to interact</div>
+      <button class="btn" onclick="endDay()">END DAY →</button>
+    </div>
+    <div style="margin-top:12px; font-size:7px; color:#e8d5b0">
+      INVENTORY: <span id="inventory-display">empty</span>
+    </div>
+  </div>
+
+  <!-- OFFERING SCREEN -->
+  <div id="screen-offering" style="display:none">
+    <p style="font-size:8px; color:#7db87a; margin-bottom:16px">🌿 OFFERING PHASE</p>
+    <p style="font-size:7px; margin-bottom:16px">Choose what to offer the Forest Goddess.</p>
+
+    <div style="margin-bottom:16px; font-size:7px">
+      CROPS AVAILABLE: <span id="offer-inventory">0</span>
+    </div>
+
+    <div style="display:flex; gap:12px; margin-bottom:24px">
+      <button class="btn" onclick="makeOffer('cherry')">🍒 CHERRY TREE (2 crops)</button>
+      <button class="btn" onclick="makeOffer('peach')">🍑 PEACH TREE (3 crops)</button>
+      <button class="btn" onclick="makeOffer('apple')">🍎 APPLE TREE (4 crops)</button>
+      <button class="btn" onclick="makeOffer('banana')">🍌 BANANA TREE (5 crops)</button>
+    </div>
+
+    <button class="btn" onclick="nextDay()">NEXT DAY →</button>
+  </div>
+
+</div>
+
