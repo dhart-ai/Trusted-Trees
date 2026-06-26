@@ -167,8 +167,8 @@
     day: 1,
     phase: 'title',
     harvestYield: 1,
-    baseEnergy: 10,
-    energyMax: 10,
+    baseEnergy: 12,
+    energyMax: 12,
     energyRemaining: 10,
     actionCosts: { plant: 3, water: 2, harvest: 1 },
     plots: ['empty', 'empty', 'empty'],
@@ -336,6 +336,31 @@
     STATE.phase = 'offering';
     render();
   }
+
+  function makeOffer(treeType) {
+  // Define the cost of each tree type
+  const costs = {
+    cherry: 2,
+    peach: 3,
+    apple: 4,
+    banana: 5
+  };
+
+  const cost = costs[treeType]; // get the cost for the chosen tree
+
+  // Check if the player has enough crops
+  if (STATE.inventory.length >= cost) {
+
+    // Remove the crops from inventory
+    STATE.inventory.splice(0, cost);
+
+    // Add the tree to the forest
+    STATE.forest.push(treeType);
+
+    // Update the crop count display
+    document.getElementById('offer-inventory').textContent = STATE.inventory.length;
+  }
+}
 </script>
 
 </body>
