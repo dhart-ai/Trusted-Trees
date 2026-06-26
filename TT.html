@@ -361,6 +361,19 @@
     document.getElementById('offer-inventory').textContent = STATE.inventory.length;
   }
 }
+
+function nextDay() {
+  STATE.day += 1;
+
+  // Reset harvested plots BEFORE applying tree effects
+  STATE.plots = STATE.plots.map(p => p === 'harvested' ? 'empty' : p);
+
+  // Now apply tree effects with the correct plot states
+  applyTreeEffects();
+
+  STATE.phase = 'farming';
+  render();
+}
 </script>
 
 </body>
