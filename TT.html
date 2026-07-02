@@ -95,7 +95,7 @@
       color: #1a1a2e;
     }
 
-    /* Plot tile style — used in the old point-and-click version, kept for reference */
+    /* Plot tile style — kept for reference */
     .plot {
       width: 120px;
       height: 120px;
@@ -155,7 +155,7 @@
     <!-- The canvas is where the top-down farm world is drawn every frame -->
     <canvas id="farm-canvas" width="672" height="320" style="border: 3px solid #4a4a5a; display:block"></canvas>
     <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center">
-      <!-- Hint text reminds the player how to move and interact -->
+      <!-- Hint text updates dynamically when player stands on a plot -->
       <div id="action-hint" style="font-size:7px; color:#7db87a">Move with WASD or arrow keys | Press E to interact</div>
       <!-- Ends the farming phase and moves to the offering phase -->
       <button class="btn" onclick="endDay()">END DAY →</button>
@@ -177,13 +177,34 @@
     </div>
 
     <!-- Each button calls makeOffer() with a different tree type string -->
-    <!-- The cost of each tree is shown in the button label -->
+    <!-- Description under each button tells the player what the tree does -->
     <div style="display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap">
-      <button class="btn" onclick="makeOffer('normal')">🌲 NORMAL TREE (1 crop)</button>
-      <button class="btn" onclick="makeOffer('cherry')">🍒 CHERRY TREE (2 crops)</button>
-      <button class="btn" onclick="makeOffer('peach')">🍑 PEACH TREE (3 crops)</button>
-      <button class="btn" onclick="makeOffer('apple')">🍎 APPLE TREE (4 crops)</button>
-      <button class="btn" onclick="makeOffer('banana')">🍌 BANANA TREE (5 crops)</button>
+
+      <div style="text-align:center">
+        <button class="btn" onclick="makeOffer('normal')">🌲 NORMAL TREE</button>
+        <p style="font-size:6px; color:#7db87a; margin-top:6px">1 crop — counts toward<br>your forest total</p>
+      </div>
+
+      <div style="text-align:center">
+        <button class="btn" onclick="makeOffer('cherry')">🍒 CHERRY TREE</button>
+        <p style="font-size:6px; color:#7db87a; margin-top:6px">2 crops — reduce action cost by 1</p>
+      </div>
+
+      <div style="text-align:center">
+        <button class="btn" onclick="makeOffer('peach')">🍑 PEACH TREE</button>
+        <p style="font-size:6px; color:#7db87a; margin-top:6px">3 crops — add 3 energy</p>
+      </div>
+
+      <div style="text-align:center">
+        <button class="btn" onclick="makeOffer('apple')">🍎 APPLE TREE</button>
+        <p style="font-size:6px; color:#7db87a; margin-top:6px">4 crops — double amount<br>of harvest crops</p>
+      </div>
+
+      <div style="text-align:center">
+        <button class="btn" onclick="makeOffer('banana')">🍌 BANANA TREE</button>
+        <p style="font-size:6px; color:#7db87a; margin-top:6px">5 crops — automated<br>watering next round</p>
+      </div>
+
     </div>
 
     <!-- Advances to the next day, checks win/lose, applies tree effects -->
@@ -297,6 +318,27 @@
     // Draw the player as a small square — inset by 4px so it looks centered in the tile
     ctx.fillStyle = player.color;
     ctx.fillRect(player.x * TILE + 4, player.y * TILE + 4, TILE - 8, TILE - 8);
+
+    // Check if player is standing on any plot and update the hint accordingly
+    // Default hint shown when player is not on any plot
+    let hint = 'Move with WASD or arrow keys | Press E to interact';
+
+    FARM_LAYOUT.plots.forEach((plot, i) => {
+      if (player.x >= plot.x && player.x <= plot.x + 1 &&
+          player.y >= plot.y && player.y <= plot.y + 1) {
+
+        const state = STATE.plots[i];
+
+        // Show a specific hint based on what action E will perform on this plot
+        if (state === 'empty')     hint = 'Press E to PLANT (costs ' + STATE.actionCosts.plant + ' energy)';
+        if (state === 'planted')   hint = 'Press E to WATER (costs ' + STATE.actionCosts.water + ' energy)';
+        if (state === 'watered')   hint = 'Press E to HARVEST (costs ' + STATE.actionCosts.harvest + ' energy)';
+        if (state === 'harvested') hint = 'Already harvested today — come back tomorrow';
+      }
+    });
+
+    // Update the hint text below the canvas
+    document.getElementById('action-hint').textContent = hint;
   }
 
   /*
